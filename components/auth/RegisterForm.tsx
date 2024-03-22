@@ -13,13 +13,15 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,  
+  FormMessage,
 } from "@/components/ui/form";
 import { CardWrapper } from "@/components/auth/CardWrapper"
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/FormError";
 import { FormSuccess } from "@/components/FormSuccess";
-import { delay } from "@/dev/delay";
+// import { delay } from "@/dev/delay";
+import { registerUser } from "@/apiCalls/auth";
+// import { AxiosResponse } from "axios";
 
 export const RegisterForm = () => {
   const [error, setError] = useState<string | undefined>("");
@@ -35,17 +37,17 @@ export const RegisterForm = () => {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
+  const onSubmit = async (data: z.infer<typeof RegisterSchema>) => {
     setError("");
     setSuccess("");
-    
-    await delay(300);
-    const validated = await RegisterSchema.safeParse(values);
-    if(validated.success){
-        setSuccess("Register success");
-    }else{
-        setError("Register failed");
-    }
+    startTransition(async () => {
+      const response = await registerUser(data);
+      if (response?.status === 200) {
+        setSuccess(response?.msg);
+      } else {
+        setError(response?.msg);
+      }
+    })
   };
 
   return (
@@ -56,7 +58,7 @@ export const RegisterForm = () => {
       showSocial
     >
       <Form {...form}>
-        <form 
+        <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-6"
         >
@@ -88,23 +90,6 @@ export const RegisterForm = () => {
                       {...field}
                       placeholder="john.doe@example.com"
                       type="email"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Amit Shaw"
-                      type="text"
                     />
                   </FormControl>
                   <FormMessage />

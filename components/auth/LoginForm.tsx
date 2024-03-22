@@ -17,13 +17,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/FormError";
 import { FormSuccess } from "@/components/FormSuccess";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { loginUser } from "@/apiCalls/auth";
+import { useRouter } from "next/navigation";
 import { delay } from "@/dev/delay";
 
 
 export const LoginForm = () => {
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
+    const router = useRouter();
+
+    const [error, setError] = useState<string | undefined>("");
+    const [success, setSuccess] = useState<string | undefined>("");
+    const [isPending, startTransition] = useTransition();
 
     const form = useForm<z.infer<typeof LoginSchema>>({
         resolver: zodResolver(LoginSchema),
@@ -36,14 +41,21 @@ export const LoginForm = () => {
     const onSubmit = async (data: z.infer<typeof LoginSchema>) => {
         setError("");
         setSuccess("");
-        await delay(3000);
-        const validated = await LoginSchema.safeParse(data);
-        if (validated.success) {
-            setSuccess("Login success");
-        } else {
-            setError("Login failed");
-        }
-    }
+
+        startTransition(async () => {
+            const response = await loginUser(data);
+            if (response?.status === 200) {
+                setSuccess(response?.msg);
+                delay(100);
+                router.push("/settings");
+                router.refresh();
+            } else {
+                setError(response?.msg);
+            }
+        });
+
+        
+    };
 
     return (
         <CardWrapper
@@ -100,7 +112,8 @@ export const LoginForm = () => {
 
                         <Button
                             type="submit"
-                            className="w-full "
+                            className="w-full"
+                            disabled={isPending}
                         >
                             Login
                         </Button>
